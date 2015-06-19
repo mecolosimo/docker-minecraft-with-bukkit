@@ -11,18 +11,31 @@ RUN add-apt-repository ppa:webupd8team/java -y
 RUN apt-get update -y; apt-get upgrade -y
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
 RUN apt-get install -y curl oracle-java8-installer oracle-java8-set-default supervisor pwgen
+RUN apt-get install -y rsync openssh-server
+RUN mkdir -p /var/run/sshd
 
-ADD ./lib/craftbukkit.jar /usr/local/etc/minecraft/craftbukkit.jar
-ADD ./lib/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
-ADD ./lib/supervisor/conf.d/minecraft.conf /etc/supervisor/conf.d/minecraft.conf
-ADD ./lib/minecraft/opts.txt /usr/local/etc/minecraft/opts.txt
-ADD ./lib/minecraft/white-list.txt /usr/local/etc/minecraft/white-list.txt
-ADD ./lib/minecraft/server.properties /usr/local/etc/minecraft/server.properties
-ADD ./lib/scripts/start /start
-ADD ./lib/eula.txt /data/eula.txt
+# You'll need a craftbukkit jar and optionally a spigot jar
+COPY ./lib/*.jar /usr/local/etc/minecraft/
+COPY ./lib/supervisor/supervisord.conf /etc/supervisor/
+COPY ./lib/supervisor/conf.d/minecraft.conf /etc/supervisor/conf.d/
+COPY ./lib/minecraft/* /usr/local/etc/minecraft/
 
-RUN chmod +x /start
+COPY ./lib/eula.txt /usr/local/etc/minecraft/eula.txt
 
+# script needed to work around docker limitations
+COPY ./lib/scripts/docker-start.sh /usr/local/etc/minecraft/
+
+# either copy your pubkey to root's .ssh/authorized_keys or this
+RUN sed -i 's/^PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN echo 'root:root' | chpasswd
+
+# minecraft port
 EXPOSE 25565
-VOLUME ["/data"]
-CMD ["/start"]
+
+# ssh port
+EXPOSE 22
+
+VOLUME /mnt/minecraft
+WORKDIR /usr/local/etc/minecraft
+
+CMD ["./docker-start.sh"]

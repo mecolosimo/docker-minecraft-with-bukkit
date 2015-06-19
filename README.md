@@ -6,4 +6,12 @@ more information on Minecraft and check out it's [website][1].
 
 ## Running
 
-    docker run -p 25565:25565 -d chrisabrams/docker-minecraft-with-bukkit
+   create a directory to mount to
+
+      mkdir minecraft
+
+   then build and run::
+
+     docker build -t mecolosimo/craftbukkit .
+     docker run -d -p 22 -p 25565:25565 -v /home/${USER}/minecraft:/mnt/minecraft --name bukkit mecolosimo/craftbukkit 
+
